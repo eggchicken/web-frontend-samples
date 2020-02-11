@@ -1,0 +1,172 @@
+<html>
+<head>
+    <title>Draw Test - GetUserMedia to Canvas Performance</title>
+
+    <style type="text/css">
+        #canvas-wrapper {
+            flex-direction: row;
+            column-count: 3;
+        }
+        video, #canvas-wrapper canvas {
+            flex: 1;
+            position: relative;
+            display: inline-block;
+            width: 30%;
+            background: green;
+        }
+        #canvas-wrapper::after {
+            position: absolute;
+            display: inline-block;
+            content: 'ORIGIN';
+            top: 0;
+            left: 0;
+            padding: 4px 18px;
+            background: red;
+            color: #fff;
+            font-size: 0.75em;
+        }
+    </style>
+</head>
+
+<body>
+    <video id="video-1"></video>
+    <div id="canvas-wrapper">
+        <canvas id="canvas-1"></canvas>
+        <canvas id="canvas-2"></canvas>
+        <canvas id="canvas-3"></canvas>
+        <canvas id="canvas-4"></canvas>
+    </div>
+</body>
+
+<script>
+var elVideo = null;
+
+var elCanvas1 = null;
+var elCanvas2 = null;
+var elCanvas3 = null;
+var offscreenCanvas = null;
+var offscreenCanvasCtx = null;
+var elCanvas4 = null;
+var offscreenCanvas2 = null;
+var offscreenCanvasCtx2 = null;
+
+var ctx1 = null;
+var ctx2 = null;
+var ctx3 = null;
+var ctx4 = null;
+
+var userMedia = null;
+
+async function main() {
+    initCanvas();
+    await initUserMedia();
+    elVideo = document.getElementById("video-1");
+    elVideo.srcObject = userMedia;
+    elVideo.play().then( e => {
+        testFunc("drawImage(3params)", test1);
+        testFunc("drawImage(9params)", test2);
+        testFunc("offscreen.drawImage() => drawImage(3params)", test3);
+        testFunc("getImageData => putImage", test4);
+    });
+
+}
+
+function initCanvas() {
+    elCanvas1 = document.getElementById("canvas-1");
+    ctx1 = elCanvas1.getContext("2d", {alpha: false});
+    elCanvas1.width = 1280;
+    elCanvas1.height = 720;
+
+    elCanvas2 = document.getElementById("canvas-2");
+    ctx2 = elCanvas2.getContext("2d", {alpha: false});
+    elCanvas2.width = 1280;
+    elCanvas2.height = 720;
+
+    elCanvas3 = document.getElementById("canvas-3");
+    ctx3 = elCanvas3.getContext("2d", {alpha: false});
+    elCanvas3.width = 1280;
+    elCanvas3.height = 720;
+    offscreenCanvas = new OffscreenCanvas(1280, 720);
+    offscreenCanvasCtx = offscreenCanvas.getContext("2d", {desynchronized: true, alpha: false});
+
+    elCanvas4 = document.getElementById("canvas-4");
+    ctx4 = elCanvas4.getContext("2d", {alpha: false});
+    elCanvas4.width = 1280;
+    elCanvas4.height = 720;
+    offscreenCanvas2 = new OffscreenCanvas(1280, 720);
+    offscreenCanvasCtx2 = offscreenCanvas.getContext("2d", {desynchronized: true, alpha: false});
+
+}
+
+async function initUserMedia() {
+    userMedia = await navigator.mediaDevices.getUserMedia({
+        video: {
+            width: 1280,
+            height: 720,
+            frameRate: 30
+        },
+        audio: false
+    })
+}
+
+async function changeUserMedia1() {
+    userMedia = await userMedia.getVideoTracks()[0].applyConstraints({
+        width: 640,
+        height: 360
+    })
+}
+
+async function changeUserMedia2() {
+    userMedia = await userMedia.getVideoTracks()[0].applyConstraints({
+        width: 1280,
+        height: 720
+    })
+}
+
+function testFunc(label, func) {
+    var startTime = performance.now();
+
+    // execution
+    func();
+
+    var executeTime = performance.now() - startTime;
+    var elP = document.createElement("pre");
+    elP.appendChild(document.createTextNode(`
+        ${label}\n
+        ${executeTime} / ${executeTime / 1000}
+    `));
+    document.body.appendChild(elP)
+}
+
+function test1() {
+    for(var i = 0; i < 3000; i++) {
+        ctx1.drawImage(elVideo, 0, 0);
+    }
+}
+
+function test2() {
+    for(var i = 0; i < 3000; i++) {
+        ctx2.clearRect(0, 0, 1280, 720);
+        ctx2.drawImage(elVideo, 0, 0, 1280, 720, 0, 0, 1280, 720);
+    }
+}
+
+function test3() {
+    // execution
+    for(var i = 0; i < 3000; i++) {
+        offscreenCanvasCtx.drawImage(elVideo, 0, 0);
+        ctx3.drawImage(offscreenCanvas, 0, 0);
+    }
+}
+
+function test4() {
+    for(var i = 0; i < 3000; i++) {
+        offscreenCanvasCtx2.drawImage(elVideo, 0, 0);
+        imageData = offscreenCanvasCtx2.getImageData(0, 0, 1280, 720);
+        ctx4.putImageData(imageData, 0, 0);
+    }
+}
+
+main();
+</script>
+</html>

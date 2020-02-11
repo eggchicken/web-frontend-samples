@@ -1,0 +1,63 @@
+<html>
+<head>
+    <title>LoopTest foreach vs map vs for of transpiled vs reduce vs for of</title>
+</head>
+
+<body>
+    <ul id="result"></ul>
+</body>
+
+<script>
+    var list = document.getElementById("result");
+    function addListItem(text) {
+        var listItem = document.createElement("li");
+        var textNode = document.createTextNode(text);
+        listItem.appendChild(textNode);
+        console.log(list)
+        list.appendChild(listItem);
+    }
+
+    function testFunc(label, func) {
+        var start = performance.now();
+        func();
+        addListItem(`${label} : ${performance.now() - start}`);
+    }
+
+    // init values
+    var values = new Array(10000);
+    for (var i = 0; i < values.length; i++) values[i]=i;
+
+    // foreach
+    testFunc("foreach", () => {
+        var sum = 0;
+        values.forEach(v => sum += v );
+    })
+
+    // map
+    testFunc("map", () => {
+        var sum = 0;
+        values.map(v => sum += v );
+    })
+
+    // for of transpiled
+    testFunc("for of transpiled", () => {
+        var sum = 0;
+        for (var _i = 0, values_1 = values; _i < values_1.length; _i++) {
+            var v = values_1[_i];
+            sum += v;
+        }
+    })
+
+    // reduce
+    testFunc("reduce", () => {
+        var sum = values.reduce((s,v) => sum += v, 0);
+    })
+
+    // for of
+    testFunc("for of", () => {
+        var sum = 0;
+        for (var v of values) sum += v;
+    })
+
+</script>
+</html>
