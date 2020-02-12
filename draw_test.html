@@ -62,11 +62,17 @@ async function main() {
     await initUserMedia();
     elVideo = document.getElementById("video-1");
     elVideo.srcObject = userMedia;
-    elVideo.play().then( e => {
+    elVideo.play().then( async e => {
         testFunc("drawImage(3params)", test1);
         testFunc("drawImage(9params)", test2);
+        testFunc("getImageData => putImage", test5);
+        testFunc("only offscreenCanvas", test6);
+
+        offscreenDrawInst.startDraw(elVideo);
         testFunc("offscreen.drawImage() => drawImage(3params)", test3);
-        testFunc("getImageData => putImage", test4);
+        testFunc("offscreen.drawImage() => drawImage(9params)", test4);
+        setTimeout(offscreenDrawInst.stopDraw, 5000);
+
     });
 
 }
@@ -95,6 +101,9 @@ function initCanvas() {
     elCanvas4.height = 720;
     offscreenCanvas2 = new OffscreenCanvas(1280, 720);
     offscreenCanvasCtx2 = offscreenCanvas.getContext("2d", {desynchronized: true, alpha: false});
+
+    offscreenCanvas3 = new OffscreenCanvas(1280, 720);
+    offscreenCanvasCtx3 = offscreenCanvas.getContext("2d", {desynchronized: true, alpha: false});
 
 }
 
@@ -152,12 +161,50 @@ function test2() {
 
 function test3() {
     for(var i = 0; i < 300; i++) {
-        offscreenCanvasCtx.drawImage(elVideo, 0, 0);
-        ctx3.drawImage(offscreenCanvas, 0, 0);
+        ctx3.drawImage(offscreenDrawInst.getOffscreenCanvas(), 0, 0);
     }
 }
 
 function test4() {
+    for(var i = 0; i < 300; i++) {
+        ctx3.drawImage(offscreenDrawInst.getOffscreenCanvas(), 0, 0, 1280, 720, 0, 0, 1280, 720);
+    }
+}
+
+var offscreenDrawInst = (function() {
+    const INTERVAL = 50;
+    var offscreenCanvas = new OffscreenCanvas(1280, 720);
+    var offscreenCanvasCtx = offscreenCanvas.getContext("2d", {desynchronized: true, alpha: false});
+
+    var timeoutHandler = null;
+    var drawCounter = 0;
+
+    var elVideo = null;
+    function startDraw(video) {
+        elVideo = video;
+        draw();
+    }
+    function draw() {
+        offscreenCanvasCtx.drawImage(elVideo, 0, 0);
+        drawCounter = drawCounter + 1;
+        timeoutHandler = setTimeout(draw, INTERVAL);
+    }
+    function stopDraw() {
+        console.log(drawCounter)
+        clearInterval(timeoutHandler)
+    }
+
+    function getOffscreenCanvas() {
+        return offscreenCanvas;
+    }
+    return {
+        startDraw,
+        stopDraw,
+        getOffscreenCanvas
+    }
+})()
+
+function test5() {
     for(var i = 0; i < 300; i++) {
         offscreenCanvasCtx2.drawImage(elVideo, 0, 0);
         imageData = offscreenCanvasCtx2.getImageData(0, 0, 1280, 720);
@@ -165,6 +212,11 @@ function test4() {
     }
 }
 
+function test6() {
+    for(var i = 0; i < 300; i++) {
+        offscreenCanvasCtx3.drawImage(elVideo, 0, 0);
+    }
+}
 main();
 </script>
 </html>
