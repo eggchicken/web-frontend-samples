@@ -67,6 +67,12 @@
 </body>
 
 <script>
+const TEST_DURATION = 5000;
+const DELAY = 20;
+let endTime = 0;
+let globalDrawCounter = 0;
+let funcOrder = 0;
+
 var elVideo = null;
 
 var elCanvas1 = null;
@@ -91,15 +97,19 @@ async function main() {
     elVideo = document.getElementById("video-1");
     elVideo.srcObject = userMedia;
     elVideo.play().then( async e => {
-        testFunc("drawImage(3params)", test1);
-        testFunc("drawImage(9params)", test2);
-        testFunc("getImageData => putImage", test5);
-        testFunc("only offscreenCanvas", test6);
+        var func1 = new testFunc("drawImage(3params)", test1);
+        setTimeout(func1.exec, 100);
+        var func2 = new testFunc("drawImage(9params)", test2);
+        setTimeout(func2.exec, 5200);
+        // await testFunc("getImageData => putImage", test5);
+        // await testFunc("only offscreenCanvas", test6);
 
         offscreenDrawInst.startDraw(elVideo);
-        testFunc("offscreen.drawImage() => drawImage(3params)", test3);
-        testFunc("offscreen.drawImage() => drawImage(9params)", test4);
-        setTimeout(offscreenDrawInst.stopDraw, 5000);
+        var func3 = new testFunc("offscreen.drawImage() => drawImage(3params)", test3);
+        setTimeout(func3.exec, 10300);
+        var func4 = new testFunc("offscreen.drawImage() => drawImage(9params)", test4);
+        setTimeout(func4.exec, 15400);
+        // setTimeout(offscreenDrawInst.stopDraw, 5000);
 
     });
 
@@ -160,47 +170,59 @@ async function changeUserMedia2() {
     })
 }
 
-function testFunc(label, func) {
-    var startTime = performance.now();
+function testFunc(label, drawFunc) {
+    let drawCount = 0;
+    function exec() {
+        // execution
+        checkDrawPerformance(drawFunc);
 
-    // execution
-    func();
+        // print result   
+        setTimeout( () => {
+            var elP = document.createElement("pre");
+            elP.appendChild(document.createTextNode(`
+                Time : ${performance.now()}\n
+                ${label}\n
+                ${drawCount} / ${drawCount / (TEST_DURATION / 1000)}
+            `));
+            document.body.appendChild(elP);
+        }, TEST_DURATION);
+    }
 
-    var executeTime = performance.now() - startTime;
-    var elP = document.createElement("pre");
-    elP.appendChild(document.createTextNode(`
-        ${label}\n
-        ${executeTime} / ${executeTime / 1000}
-    `));
-    document.body.appendChild(elP);
+    function checkDrawPerformance(drawFunc) {
+        endTime = performance.now() + TEST_DURATION;
+        drawLoop(drawFunc);
+    }
+
+    function drawLoop(drawFunc) {
+        if(performance.now() > endTime) {
+            return;
+        }
+        drawFunc();
+        drawCount = drawCount + 1;
+        setTimeout(drawLoop, DELAY, drawFunc)
+    }
+    return { exec }
 }
 
+
+
 function test1() {
-    for(var i = 0; i < 300; i++) {
-        ctx1.drawImage(elVideo, 0, 0);
-    }
+    ctx1.drawImage(elVideo, 0, 0);
 }
 
 function test2() {
-    for(var i = 0; i < 300; i++) {
-        ctx2.drawImage(elVideo, 0, 0, 1280, 720, 0, 0, 1280, 720);
-    }
+    ctx2.drawImage(elVideo, 0, 0, 1280, 720, 0, 0, 1280, 720);
 }
 
 function test3() {
-    for(var i = 0; i < 300; i++) {
-        ctx3.drawImage(offscreenDrawInst.getOffscreenCanvas(), 0, 0);
-    }
+    ctx3.drawImage(offscreenDrawInst.getOffscreenCanvas(), 0, 0);
 }
 
 function test4() {
-    for(var i = 0; i < 300; i++) {
-        ctx3.drawImage(offscreenDrawInst.getOffscreenCanvas(), 0, 0, 1280, 720, 0, 0, 1280, 720);
-    }
+    ctx4.drawImage(offscreenDrawInst.getOffscreenCanvas(), 0, 0, 1280, 720, 0, 0, 1280, 720);
 }
 
 var offscreenDrawInst = (function() {
-    const INTERVAL = 50;
     var offscreenCanvas = new OffscreenCanvas(1280, 720);
     var offscreenCanvasCtx = offscreenCanvas.getContext("2d", {desynchronized: true, alpha: false});
 
@@ -215,7 +237,7 @@ var offscreenDrawInst = (function() {
     function draw() {
         offscreenCanvasCtx.drawImage(elVideo, 0, 0);
         drawCounter = drawCounter + 1;
-        timeoutHandler = setTimeout(draw, INTERVAL);
+        timeoutHandler = setTimeout(draw, DELAY);
     }
     function stopDraw() {
         console.log(drawCounter)
