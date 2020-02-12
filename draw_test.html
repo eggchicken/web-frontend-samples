@@ -139,28 +139,26 @@ function testFunc(label, func) {
 }
 
 function test1() {
-    for(var i = 0; i < 3000; i++) {
+    for(var i = 0; i < 300; i++) {
         ctx1.drawImage(elVideo, 0, 0);
     }
 }
 
 function test2() {
-    for(var i = 0; i < 3000; i++) {
-        ctx2.clearRect(0, 0, 1280, 720);
+    for(var i = 0; i < 300; i++) {
         ctx2.drawImage(elVideo, 0, 0, 1280, 720, 0, 0, 1280, 720);
     }
 }
 
 function test3() {
-    // execution
-    for(var i = 0; i < 3000; i++) {
+    for(var i = 0; i < 300; i++) {
         offscreenCanvasCtx.drawImage(elVideo, 0, 0);
         ctx3.drawImage(offscreenCanvas, 0, 0);
     }
 }
 
 function test4() {
-    for(var i = 0; i < 3000; i++) {
+    for(var i = 0; i < 300; i++) {
         offscreenCanvasCtx2.drawImage(elVideo, 0, 0);
         imageData = offscreenCanvasCtx2.getImageData(0, 0, 1280, 720);
         ctx4.putImageData(imageData, 0, 0);
